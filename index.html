@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CYBER-HEAVY: Interactive 3D Exploded-View Machinery Laboratory</title>
+  
+  <!-- A-Frame 1.6.0 Core -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  
+  <!-- Google Fonts for Futuristic CAD & Industrial Aesthetics -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #00f0ff;
+      --primary-glow: rgba(0, 240, 255, 0.4);
+      --accent: #ffb700;
+      --accent-glow: rgba(255, 183, 0, 0.4);
+      --danger: #ff0055;
+      --success: #00ff88;
+      --bg-dark: #070a10;
+      --panel-bg: rgba(9, 14, 24, 0.9);
+      --border-glow: 1px solid rgba(0, 240, 255, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Rajdhani', sans-serif;
+      color: #e0f0ff;
+    }
+
+    /* 2D Overlay UI Layer */
+    #ui-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 20px;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* Top CAD Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(8, 12, 20, 0.95) 0%, rgba(8, 12, 20, 0) 100%);
+      padding: 10px 20px;
+      border-bottom: var(--border-glow);
+      backdrop-filter: blur(10px);
+      border-radius: 6px;
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 0 15px var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: 700;
+    }
+
+    .top-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-cyber {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-cyber:hover {
+      background: var(--primary);
+      color: #050811;
+      box-shadow: 0 0 20px var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-cyber.accent {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(255, 183, 0, 0.1);
+      box-shadow: 0 0 10px rgba(255, 183, 0, 0.15);
+    }
+
+    .btn-cyber.accent:hover {
+      background: var(--accent);
+      color: #050811;
+      box-shadow: 0 0 20px var(--accent);
+    }
+
+    /* Floating Technical Inspector Card (Desktop / Tablet) */
+    #hud-inspector-card {
+      position: absolute;
+      top: 75px;
+      left: 20px;
+      width: 360px;
+      background: var(--panel-bg);
+      border: var(--border-glow);
+      border-radius: 8px;
+      padding: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+      transition: all 0.3s ease;
+    }
+
+    .card-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 4px;
+    }
+
+    .part-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+    }
+
+    .part-desc {
+      font-size: 14px;
+      color: #b0d8ff;
+      line-height: 1.45;
+      margin-bottom: 12px;
+      background: rgba(0, 240, 255, 0.05);
+      padding: 10px;
+      border-left: 3px solid var(--primary);
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* Disassembly Expansion Slider Bar */
+    .slider-box {
+      margin-top: 10px;
+      background: rgba(0,0,0,0.4);
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: #8bb0d0;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .cyber-range {
+      width: 100%;
+      height: 8px;
+      -webkit-appearance: none;
+      background: rgba(0, 240, 255, 0.2);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .cyber-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    /* Bottom Machinery Quick Dock */
+    #bottom-bar {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      background: linear-gradient(0deg, rgba(8, 12, 20, 0.95) 0%, rgba(8, 12, 20, 0) 100%);
+      padding: 12px;
+      align-items: center;
+    }
+
+    .machine-tab {
+      background: rgba(15, 25, 40, 0.88);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 6px;
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      color: #c0e0ff;
+    }
+
+    .machine-tab:hover, .machine-tab.active {
+      border-color: var(--primary);
+      background: rgba(0, 240, 255, 0.22);
+      color: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 240, 255, 0.35);
+    }
+
+    .machine-tab .icon { font-size: 22px; }
+    .machine-tab .name { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700; }
+    .machine-tab .sub { font-size: 11px; color: #7090b0; }
+
+    /* Guide Modal */
+    #help-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 520px;
+      max-width: 90%;
+      background: rgba(10, 16, 26, 0.96);
+      border: 1px solid var(--primary);
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      padding: 22px;
+      z-index: 1000;
+      backdrop-filter: blur(15px);
+      display: none;
+    }
+
+    #help-modal.show { display: block; animation: modalFadeIn 0.3s ease; }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translate(-50%, -48%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+      padding-bottom: 8px;
+    }
+
+    .modal-title { font-family: 'Orbitron', sans-serif; font-size: 17px; color: var(--primary); }
+    .modal-close { cursor: pointer; font-size: 20px; color: #7090b0; }
+    .modal-close:hover { color: #fff; }
+
+    /* Dynamic Crosshair Indicator */
+    #reticle-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border: 1px solid var(--primary);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 2D Overlay UI Layer -->
+  <div id="ui-container">
+    <header class="interactive">
+      <div class="brand-title">
+        <span>⚡ CYBER-HEAVY</span>
+        <span class="brand-badge">EXPLODED-VIEW CAD LAB</span>
+      </div>
+      <div class="top-controls">
+        <button id="btn-audio-toggle" class="btn-cyber" onclick="toggleAudioEngine()">🔊 AUDIO: ON</button>
+        <button class="btn-cyber" onclick="toggleHelpModal()">❓ HELP [H]</button>
+        <button id="btn-explode-toggle" class="btn-cyber accent" onclick="toggleCurrentExplode()">💥 EXPLODE VIEW [SPACE]</button>
+      </div>
+    </header>
+
+    <!-- Technical Inspector Card (Shows hovered/selected component info) -->
+    <div id="hud-inspector-card" class="interactive">
+      <div class="card-label">
+        <span id="hud-subsystem-label">MACHINERY INSPECTOR</span>
+        <span id="hud-status-label">STATUS: ASSEMBLED</span>
+      </div>
+      <div id="hud-part-name" class="part-title">Select or Hover a Component</div>
+      <div id="hud-part-desc" class="part-desc">
+        Walk or teleport near any machine station or click the 3D parts to trigger an exploded engineering cutaway view revealing all internal mechanics.
+      </div>
+      
+      <!-- Interactive Disassembly Slider -->
+      <div class="slider-box">
+        <div class="slider-header">
+          <span>EXPLODED EXPANSION:</span>
+          <span id="slider-pct-label">0%</span>
+        </div>
+        <input type="range" id="explode-range-slider" class="cyber-range" min="0" max="100" value="0" oninput="onSliderChange(this.value)">
+      </div>
+    </div>
+
+    <!-- Center Reticle Indicator -->
+    <div id="reticle-center"></div>
+
+    <!-- Bottom Vehicle Quick Selector Dock -->
+    <div id="bottom-bar" class="interactive">
+      <div class="machine-tab" id="tab-pump" onclick="teleportToStation('pump')">
+        <span class="icon">⚙️</span>
+        <div>
+          <div class="name">500HP PUMP & MOTOR</div>
+          <div class="sub">Volute, Impeller & Stator [1]</div>
+        </div>
+      </div>
+      <div class="machine-tab" id="tab-excavator" onclick="teleportToStation('excavator')">
+        <span class="icon">🚜</span>
+        <div>
+          <div class="name">JCB EXCAVATOR</div>
+          <div class="sub">Engine, Hydraulics & Slew [2]</div>
+        </div>
+      </div>
+      <div class="machine-tab" id="tab-sub" onclick="teleportToStation('sub')">
+        <span class="icon">⚓</span>
+        <div>
+          <div class="name">TRITON SUBMERSIBLE</div>
+          <div class="sub">Titanium Sphere & Motor [3]</div>
+        </div>
+      </div>
+      <div class="machine-tab" id="tab-hub" onclick="teleportToStation('hub')">
+        <span class="icon">🏢</span>
+        <div>
+          <div class="name">CENTRAL OVERVIEW</div>
+          <div class="sub">Full Lab Perspective [0]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="help-modal">
+    <div class="modal-header">
+      <div class="modal-title">⚡ 3D EXPLODED-VIEW OPERATING GUIDE</div>
+      <div class="modal-close" onclick="toggleHelpModal()">✕</div>
+    </div>
+    <div style="font-size: 14px; color: #a0c0e0; line-height: 1.5;">
+      Welcome to the <strong>Exploded-View Engineering Laboratory</strong>. Inspect and disassemble industrial heavy machinery to explore their internal engines, pumps, impellers, motors, and hydraulic manifolds.
+    </div>
+    <div style="margin-top: 15px; font-size: 13px;">
+      <p style="margin-bottom: 8px;"><strong>🎮 Proximity Auto-Expansion:</strong> Walking or teleporting within 4 meters of any machine automatically initiates its exploded view animation!</p>
+      <p style="margin-bottom: 8px;"><strong>🔍 Part Hover / Gaze:</strong> Hover your cursor or VR laser over any internal part to highlight it and view detailed technical engineering specs on the floating 3D <code>#info-panel</code>.</p>
+      <p style="margin-bottom: 8px;"><strong>🎛️ Disassembly Slider:</strong> Use the 2D slider or 3D VR pedestal lever in front of each machine to smoothly expand or contract the exploded cutaway.</p>
+    </div>
+    <div style="margin-top: 18px; text-align: center;">
+      <button class="btn-cyber" style="width: 100%; justify-content: center;" onclick="toggleHelpModal()">CONTINUE INSPECTION</button>
+    </div>
+  </div>
+
+  <!-- A-FRAME 3D SCENE -->
+  <a-scene 
+    background="color: #06090e"
+    fog="type: exponential; color: #070d18; density: 0.015"
+    renderer="antialias: true; colorManagement: true; highRefreshRate: true"
+    xr-mode-ui="enabled: true">
+
+    <!-- Procedural Styling Mixins -->
+    <a-assets>
+      <a-mixin id="metal-bronze" material="color: #cd7f32; roughness: 0.3; metalness: 0.9"></a-mixin>
+      <a-mixin id="metal-steel" material="color: #e0e5eb; roughness: 0.2; metalness: 0.95"></a-mixin>
+      <a-mixin id="metal-cast-iron" material="color: #2b323d; roughness: 0.6; metalness: 0.7"></a-mixin>
+      <a-mixin id="metal-copper" material="color: #b87333; roughness: 0.25; metalness: 0.9"></a-mixin>
+      <a-mixin id="metal-yellow" material="color: #ffaa00; roughness: 0.35; metalness: 0.85"></a-mixin>
+      <a-mixin id="metal-blue" material="color: #0077b6; roughness: 0.4; metalness: 0.8"></a-mixin>
+      <a-mixin id="glass-cutaway" material="color: #00f0ff; opacity: 0.25; transparent: true; roughness: 0.1"></a-mixin>
+      <a-mixin id="neon-cyan" material="color: #00f0ff; emissive: #00f0ff; emissiveIntensity: 0.8; shader: standard"></a-mixin>
+      <a-mixin id="neon-orange" material="color: #ffaa00; emissive: #ffaa00; emissiveIntensity: 0.8; shader: standard"></a-mixin>
+      <a-mixin id="neon-green" material="color: #00ff88; emissive: #00ff88; emissiveIntensity: 0.8; shader: standard"></a-mixin>
+      <a-mixin id="interactable-hover" animation__hover="property: scale; to: 1.08 1.08 1.08; startEvents: mouseenter; dur: 150" animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 150"></a-mixin>
+    </a-assets>
+
+    <!-- LIGHTING RIG -->
+    <a-entity id="lighting-rig">
+      <a-light type="ambient" color="#354860" intensity="1.3"></a-light>
+      <a-light type="directional" color="#d5e8ff" intensity="1.5" position="0 25 10"></a-light>
+      <a-light type="point" color="#00f0ff" intensity="1.6" distance="20" position="0 6 0"></a-light>
+      <a-light type="point" color="#00ff88" intensity="1.4" distance="18" position="-12 5 -4"></a-light>
+      <a-light type="point" color="#ffaa00" intensity="1.4" distance="18" position="12 5 -4"></a-light>
+    </a-entity>
+
+    <!-- HANGAR ARCHITECTURE & INSPECTION ENVIRONMENT -->
+    <a-entity id="hangar-facility">
+      <!-- High-Tech Inspection Floor with Grid -->
+      <a-plane id="hub-floor" class="teleport-target" position="0 0 -5" rotation="-90 0 0" width="60" height="60" material="color: #0b111a; roughness: 0.8; metalness: 0.3"></a-plane>
+      <a-plane position="0 0.01 -5" rotation="-90 0 0" width="56" height="56" material="color: #0d1726; wireframe: true; wireframeLinewidth: 2; opacity: 0.35"></a-plane>
+
+      <!-- Hangar Walls -->
+      <a-box position="0 10 -30" width="60" height="20" depth="1" material="color: #0d131d; roughness: 0.9"></a-box>
+      <a-box position="-30 10 -5" rotation="0 90 0" width="60" height="20" depth="1" material="color: #0d131d; roughness: 0.9"></a-box>
+      <a-box position="30 10 -5" rotation="0 -90 0" width="60" height="20" depth="1" material="color: #0d131d; roughness: 0.9"></a-box>
+      <a-box position="0 20 -5" width="60" height="1" depth="60" material="color: #070a10; roughness: 0.9"></a-box>
+
+      <!-- Sector Signage -->
+      <a-entity position="-12 6 -28">
+        <a-text value="STATION 01 // CENTRIFUGAL PUMP & MOTOR" align="center" color="#00f0ff" width="12" font="kelsonsans"></a-text>
+      </a-entity>
+      <a-entity position="0 7 -28">
+        <a-text value="STATION 02 // TRITON SUBMERSIBLE CUTAWAY" align="center" color="#00ff88" width="13" font="kelsonsans"></a-text>
+      </a-entity>
+      <a-entity position="12 6 -28">
+        <a-text value="STATION 03 // JCB EXCAVATOR POWERTRAIN" align="center" color="#ffaa00" width="12" font="kelsonsans"></a-text>
+      </a-entity>
+    </a-entity>
+
+
+    <!-- ========================================================================= -->
+    <!-- STATION 1: ⚙️ 500HP INDUSTRIAL CENTRIFUGAL PUMP & MOTOR (EXPLODED VIEW)   -->
+    <!-- ========================================================================= -->
+    <a-entity id="station-pump" position="-12 0 -6" proximity-trigger="machine: pump; radius: 4.5">
+      <!-- Circular Inspection Dais -->
+      <a-cylinder position="0 0.15 0" radius="3.2" height="0.3" material="color: #121c28; roughness: 0.5; metalness: 0.8"></a-cylinder>
+      <a-ring position="0 0.31 0" rotation="-90 0 0" radius-inner="2.9" radius-outer="3.1" mixin="neon-cyan"></a-ring>
+
+      <!-- 3D FLOATING #INFO-PANEL FOR STATION 1 -->
+      <a-entity position="0 3.2 0">
+        <a-plane width="3.2" height="0.9" material="color: #081220; opacity: 0.9; transparent: true; side: double">
+          <a-ring position="0 0 0.01" radius-inner="1.5" radius-outer="1.55" mixin="neon-cyan"></a-ring>
+          <a-text id="info-panel" value="500 HP PUMP ASSEMBLY // READY FOR DISASSEMBLY" align="center" position="0 0.1 0.02" width="3.2" color="#00f0ff" font="kelsonsans"></a-text>
+          <a-text id="info-panel-sub" value="Hover over Volute, Impeller or Motor to inspect internal mechanics" align="center" position="0 -0.22 0.02" width="2.4" color="#a0d0ff"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- 3D Pedestal Exploded View Toggle Switch -->
+      <a-entity position="0 0.8 2.5" rotation="-25 0 0">
+        <a-box id="btn-pump-explode-3d" class="clickable" width="1.4" height="0.4" depth="0.15" material="color: #00f0ff; emissive: #00f0ff; emissiveIntensity: 0.5" mixin="interactable-hover" onclick="toggleExplodeMachine('pump')">
+          <a-text id="btn-pump-text" value="💥 EXPLODE CUTAWAY" align="center" position="0 0 0.09" width="3.0" color="#000"></a-text>
+        </a-box>
+      </a-entity>
+
+      <!-- EXPLODABLE PUMP ASSEMBLY CONTAINER (Angled for optimal 3/4 cutaway visibility) -->
+      <a-entity id="pump-assembly-root" position="0 1.4 0" rotation="10 25 0">
+        
+        <!-- BASE MOUNTING SKID (Stays Fixed) -->
+        <a-box position="0 -0.6 0" width="4.4" height="0.3" depth="1.8" mixin="metal-cast-iron"></a-box>
+        <a-box position="0 -0.4 0" width="4.2" height="0.1" depth="1.6" mixin="metal-steel"></a-box>
+
+        <!-- ========================================== -->
+        <!-- PART 1: VOLUTE CASING (Translates Left: X -2.2) -->
+        <!-- ========================================== -->
+        <a-entity id="part-volute" class="explodable-part" data-part="volute" position="0 0 0">
+          <!-- Main Spiral Volute Outer Housing -->
+          <a-torus position="-1.2 0 0" rotation="0 90 0" radius="0.85" radius-tubular="0.3" mixin="metal-blue"></a-torus>
+          <!-- Inlet Suction Flange (Front) -->
+          <a-cylinder position="-1.2 0 0.9" rotation="90 0 0" radius="0.4" height="0.4" mixin="metal-steel"></a-cylinder>
+          <a-ring position="-1.2 0 1.11" radius-inner="0.25" radius-outer="0.42" mixin="metal-cast-iron"></a-ring>
+          <!-- Vertical Discharge Nozzle (Top) -->
+          <a-cylinder position="-1.2 1.0 0" radius="0.3" height="0.7" mixin="metal-blue"></a-cylinder>
+          <a-cylinder position="-1.2 1.35 0" radius="0.38" height="0.08" mixin="metal-steel"></a-cylinder>
+
+          <!-- Transparent Cutaway Casing Shell -->
+          <a-torus position="-1.2 0 0" rotation="0 90 0" radius="0.87" radius-tubular="0.31" mixin="glass-cutaway"></a-torus>
+
+          <!-- INVISIBLE INTERACTIVE HITBOX FOR VOLUTE CASING -->
+          <a-box 
+            class="clickable" 
+            position="-1.2 0.3 0" 
+            width="1.6" 
+            height="1.8" 
+            depth="1.6" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Volute Casing', 'Fluid Flow Dynamics', 'Part 1: Volute Casing - Directs high-velocity fluid flow into high-pressure discharge. Engineered with cast ductile iron.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <!-- 3D Floating Part Tag -->
+          <a-text value="[1] VOLUTE CASING" align="center" position="-1.2 1.6 0" width="2.2" color="#00f0ff"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- PART 2: IMPELLER & DRIVE SHAFT (Center / Rotates) -->
+        <!-- ========================================== -->
+        <a-entity id="part-impeller" class="explodable-part" data-part="impeller" position="0 0 0">
+          <!-- Spinning Impeller Group -->
+          <a-entity id="spinning-impeller" position="-1.2 0 0" rotation="0 0 0">
+            <!-- Impeller Hub & Shroud -->
+            <a-cylinder rotation="0 90 90" radius="0.65" height="0.12" mixin="metal-bronze"></a-cylinder>
+            <a-cone position="0.08 0 0" rotation="0 0 -90" radius-bottom="0.2" radius-top="0.05" height="0.15" mixin="metal-steel"></a-cone>
+            
+            <!-- Curved Machined Vanes -->
+            <a-box position="0 0.35 0.2" rotation="25 0 0" width="0.1" height="0.3" depth="0.04" mixin="metal-bronze"></a-box>
+            <a-box position="0 -0.35 -0.2" rotation="25 0 0" width="0.1" height="0.3" depth="0.04" mixin="metal-bronze"></a-box>
+            <a-box position="0 0.2 -0.35" rotation="0 25 0" width="0.1" height="0.04" depth="0.3" mixin="metal-bronze"></a-box>
+            <a-box position="0 -0.2 0.35" rotation="0 25 0" width="0.1" height="0.04" depth="0.3" mixin="metal-bronze"></a-box>
+          </a-entity>
+
+          <!-- Precision Hardened Steel Drive Shaft -->
+          <a-cylinder position="-0.3 0 0" rotation="0 0 90" radius="0.08" height="1.8" mixin="metal-steel"></a-cylinder>
+          
+          <!-- Mechanical Seal Pack & Stuffing Box -->
+          <a-cylinder position="-0.6 0 0" rotation="0 0 90" radius="0.22" height="0.25" mixin="metal-copper"></a-cylinder>
+          
+          <!-- Heavy-Duty Roller Bearing Housing -->
+          <a-box position="-0.1 0 0" width="0.5" height="0.6" depth="0.6" mixin="metal-cast-iron"></a-box>
+          <a-cylinder position="-0.1 0.35 0" radius="0.04" height="0.15" mixin="metal-copper"></a-cylinder> <!-- Lube Port -->
+
+          <!-- INVISIBLE INTERACTIVE HITBOX FOR IMPELLER -->
+          <a-box 
+            class="clickable" 
+            position="-0.7 0 0" 
+            width="1.4" 
+            height="1.2" 
+            depth="1.2" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Centrifugal Impeller & Shaft', 'Kinetic Energy Transfer', 'Part 2: Impeller - Transfers kinetic rotational energy to fluid at 1750 RPM. Features CNC machined bronze backward-curved vanes and carbon mechanical seals.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="[2] IMPELLER & SHAFT" align="center" position="-0.7 0.9 0" width="2.2" color="#ffaa00"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- PART 3: 500 HP ELECTRIC DRIVE MOTOR (Translates Right: X +2.4) -->
+        <!-- ========================================== -->
+        <a-entity id="part-motor" class="explodable-part" data-part="motor" position="0 0 0">
+          <!-- Motor Main Stator Frame with Heat Fins -->
+          <a-cylinder position="1.1 0 0" rotation="0 0 90" radius="0.65" height="1.6" mixin="metal-blue"></a-cylinder>
+          <!-- Internal Copper Stator Windings (Revealed in Cutaway) -->
+          <a-cylinder position="1.1 0 0" rotation="0 0 90" radius="0.55" height="1.5" mixin="metal-copper"></a-cylinder>
+          <!-- Magnetic Rotor Core -->
+          <a-cylinder position="1.1 0 0" rotation="0 0 90" radius="0.4" height="1.55" mixin="metal-steel"></a-cylinder>
+          
+          <!-- Terminal Connection Box (Top) -->
+          <a-box position="1.1 0.7 0" width="0.4" height="0.3" depth="0.4" mixin="metal-cast-iron"></a-box>
+          <a-cylinder position="1.1 0.86 0" radius="0.04" height="0.05" mixin="metal-steel"></a-cylinder>
+
+          <!-- High-Velocity Cooling Fan & Cowling (Rear End) -->
+          <a-cylinder position="2.0 0 0" rotation="0 0 90" radius="0.6" height="0.3" mixin="metal-cast-iron"></a-cylinder>
+          <a-cylinder position="2.16 0 0" rotation="0 0 90" radius="0.5" height="0.02" mixin="metal-steel" wireframe="true"></a-cylinder>
+
+          <!-- INVISIBLE INTERACTIVE HITBOX FOR DRIVE MOTOR -->
+          <a-box 
+            class="clickable" 
+            position="1.2 0 0" 
+            width="1.8" 
+            height="1.5" 
+            depth="1.5" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('500 HP Induction Motor', 'Electromechanical Power', 'Part 3: Drive Motor - 500 HP Electric induction motor with Class-H insulated copper stator windings, laminated rotor core, and TEFC dual cooling airflow.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="[3] 500HP DRIVE MOTOR" align="center" position="1.2 1.1 0" width="2.2" color="#00ff88"></a-text>
+        </a-entity>
+
+      </a-entity>
+    </a-entity>
+
+
+    <!-- ========================================================================= -->
+    <!-- STATION 2: ⚓ TRITON DEEP-SEA SUBMERSIBLE (EXPLODED VIEW CUTAWAY)          -->
+    <!-- ========================================================================= -->
+    <a-entity id="station-sub" position="0 0 -17" proximity-trigger="machine: sub; radius: 5.0">
+      <a-cylinder position="0 0.15 0" radius="4.0" height="0.3" material="color: #101a24; roughness: 0.5; metalness: 0.8"></a-cylinder>
+      <a-ring position="0 0.31 0" rotation="-90 0 0" radius-inner="3.7" radius-outer="3.9" mixin="neon-green"></a-ring>
+
+      <!-- 3D Info Display for Sub -->
+      <a-entity position="0 3.8 0">
+        <a-plane width="3.6" height="0.9" material="color: #081220; opacity: 0.9; transparent: true; side: double">
+          <a-ring position="0 0 0.01" radius-inner="1.65" radius-outer="1.7" mixin="neon-green"></a-ring>
+          <a-text id="sub-info-panel" value="TRITON SUBMERSIBLE // EXPLODED PRESSURE HULL" align="center" position="0 0.1 0.02" width="3.4" color="#00ff88" font="kelsonsans"></a-text>
+          <a-text id="sub-info-panel-sub" value="Hover over Titanium Sphere, Lithium Battery or Vector Thrusters" align="center" position="0 -0.22 0.02" width="2.5" color="#a0d0ff"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- 3D Toggle Button -->
+      <a-entity position="0 0.8 3.2" rotation="-25 0 0">
+        <a-box id="btn-sub-explode-3d" class="clickable" width="1.4" height="0.4" depth="0.15" material="color: #00ff88; emissive: #00ff88; emissiveIntensity: 0.5" mixin="interactable-hover" onclick="toggleExplodeMachine('sub')">
+          <a-text value="💥 EXPLODE HULL" align="center" position="0 0 0.09" width="3.0" color="#000"></a-text>
+        </a-box>
+      </a-entity>
+
+      <!-- EXPLODABLE SUBMARINE ROOT (Rotated broadside to showcase full 6m hull cutaway) -->
+      <a-entity id="sub-assembly-root" position="0 1.8 0" rotation="5 -70 0">
+        
+        <!-- ========================================== -->
+        <!-- SUB PART 1: LEFT HYDRODYNAMIC FAIRING (Translates X: -3.0) -->
+        <!-- ========================================== -->
+        <a-entity id="sub-part-left-hull" class="explodable-part" data-part="sub-left" position="0 0 0">
+          <a-cylinder position="0 0 0" rotation="90 0 0" radius="1.6" height="6.0" theta-start="180" theta-length="180" mixin="metal-blue" side="double"></a-cylinder>
+          <!-- Left Hitbox -->
+          <a-box 
+            class="clickable" 
+            position="-1.2 0 0" 
+            width="1.8" 
+            height="2.5" 
+            depth="6.0" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Port Hydrodynamic Fairing', 'Hydrodynamics', 'Port outer shell panel: Syntactic foam and carbon-fiber composite fairing engineered for deep sea hydrodynamics and acoustic dampening.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="PORT FAIRING" align="center" position="-1.8 1.8 0" width="2.5" color="#00f0ff"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- SUB PART 2: RIGHT HYDRODYNAMIC FAIRING (Translates X: +3.0) -->
+        <!-- ========================================== -->
+        <a-entity id="sub-part-right-hull" class="explodable-part" data-part="sub-right" position="0 0 0">
+          <a-cylinder position="0 0 0" rotation="90 0 0" radius="1.6" height="6.0" theta-start="0" theta-length="180" mixin="metal-blue" side="double"></a-cylinder>
+          <!-- Right Hitbox -->
+          <a-box 
+            class="clickable" 
+            position="1.2 0 0" 
+            width="1.8" 
+            height="2.5" 
+            depth="6.0" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Starboard Fairing', 'Hydrodynamics', 'Starboard outer shell panel: Houses variable water ballast tanks, high-pressure air valves, and external floodlight wiring.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="STARBOARD FAIRING" align="center" position="1.8 1.8 0" width="2.5" color="#00f0ff"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- SUB PART 3: TITANIUM PRESSURE SPHERE (Core / Internal Center) -->
+        <!-- ========================================== -->
+        <a-entity id="sub-part-core" position="0 0 0">
+          <!-- Heavy Grade-5 Titanium Sphere (Occupant Cockpit) -->
+          <a-sphere position="0 0 0.8" radius="1.3" mixin="metal-steel"></a-sphere>
+          <a-sphere position="0 0 1.8" radius="0.8" scale="1 1 0.4" mixin="glass-cutaway"></a-sphere> <!-- Front Viewport -->
+          
+          <!-- Internal Pilot Console & Instruments (Visible) -->
+          <a-box position="0 -0.3 0.9" width="0.8" height="0.4" depth="0.5" material="color: #111"></a-box>
+          <a-plane position="0 0 1.1" rotation="-30 0 0" width="0.6" height="0.3" mixin="neon-cyan"></a-plane>
+
+          <!-- INVISIBLE HITBOX FOR TITANIUM CORE -->
+          <a-box 
+            class="clickable" 
+            position="0 0 0.8" 
+            width="2.6" 
+            height="2.6" 
+            depth="2.6" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Titanium Pressure Sphere', 'Life Support & Crew Cockpit', 'Grade-5 Titanium Pressure Sphere: 65mm thick alloy designed to withstand 1,100 bar extreme oceanic trench hydrostatic pressure.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="TITANIUM PRESSURE SPHERE" align="center" position="0 1.6 0.8" width="2.8" color="#00ff88"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- SUB PART 4: SOLID-STATE LITHIUM BATTERY BANKS (Translates Y: -1.8) -->
+        <!-- ========================================== -->
+        <a-entity id="sub-part-battery" class="explodable-part" data-part="sub-battery" position="0 0 0">
+          <a-box position="0 -1.0 0" width="1.6" height="0.4" depth="3.2" material="color: #1a242f"></a-box>
+          <!-- Glowing Battery Module Cells -->
+          <a-box position="-0.4 -0.8 0" width="0.5" height="0.25" depth="2.8" mixin="neon-green"></a-box>
+          <a-box position="0.4 -0.8 0" width="0.5" height="0.25" depth="2.8" mixin="neon-green"></a-box>
+
+          <!-- INVISIBLE HITBOX FOR BATTERIES -->
+          <a-box 
+            class="clickable" 
+            position="0 -1.0 0" 
+            width="2.0" 
+            height="0.8" 
+            depth="3.4" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Solid-State Lithium Power Banks', 'Energy Storage', '120 kWh Pressure-Compensated Solid-State Battery: Powers navigation thrusters, scientific robotic arms, and life-support scrubbers for 18-hour continuous dive cycles.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="LITHIUM BATTERY BANKS" align="center" position="0 -1.4 0" width="2.4" color="#00ff88"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- SUB PART 5: BRUSHLESS ELECTRIC PROPULSION THRUSTERS (Translates Z: -2.8) -->
+        <!-- ========================================== -->
+        <a-entity id="sub-part-thrusters" class="explodable-part" data-part="sub-thruster" position="0 0 0">
+          <!-- Left Vector Thruster -->
+          <a-entity position="-1.2 0 -3.2">
+            <a-cylinder rotation="90 0 0" radius="0.35" height="0.8" mixin="metal-steel"></a-cylinder>
+            <a-box position="0 0 -0.45" width="0.6" height="0.1" depth="0.02" mixin="metal-bronze"></a-box>
+          </a-entity>
+          <!-- Right Vector Thruster -->
+          <a-entity position="1.2 0 -3.2">
+            <a-cylinder rotation="90 0 0" radius="0.35" height="0.8" mixin="metal-steel"></a-cylinder>
+            <a-box position="0 0 -0.45" width="0.6" height="0.1" depth="0.02" mixin="metal-bronze"></a-box>
+          </a-entity>
+
+          <!-- INVISIBLE HITBOX FOR THRUSTERS -->
+          <a-box 
+            class="clickable" 
+            position="0 0 -3.2" 
+            width="3.2" 
+            height="1.2" 
+            depth="1.5" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Vector Electric Propulsion', 'Subsea Mobility', 'Twin 25 kW Brushless DC Vector Thrusters: Magnetically-coupled propeller pods capable of omnidirectional 6-axis maneuvering.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="PROPULSION THRUSTERS" align="center" position="0 0.7 -3.2" width="2.4" color="#ffaa00"></a-text>
+        </a-entity>
+
+      </a-entity>
+    </a-entity>
+
+
+    <!-- ========================================================================= -->
+    <!-- STATION 3: 🚜 JCB EXCAVATOR POWERTRAIN & HYDRAULICS (EXPLODED VIEW)       -->
+    <!-- ========================================================================= -->
+    <a-entity id="station-excavator" position="12 0 -6" proximity-trigger="machine: excavator; radius: 4.5">
+      <a-cylinder position="0 0.15 0" radius="3.4" height="0.3" material="color: #1a1e26; roughness: 0.5; metalness: 0.8"></a-cylinder>
+      <a-ring position="0 0.31 0" rotation="-90 0 0" radius-inner="3.1" radius-outer="3.3" mixin="neon-orange"></a-ring>
+
+      <!-- 3D Info Display for Excavator -->
+      <a-entity position="0 3.6 0">
+        <a-plane width="3.4" height="0.9" material="color: #081220; opacity: 0.9; transparent: true; side: double">
+          <a-ring position="0 0 0.01" radius-inner="1.55" radius-outer="1.6" mixin="neon-orange"></a-ring>
+          <a-text id="ex-info-panel" value="JCB HYDRAULIC POWERTRAIN // CUTAWAY" align="center" position="0 0.1 0.02" width="3.2" color="#ffaa00" font="kelsonsans"></a-text>
+          <a-text id="ex-info-panel-sub" value="Hover over Turbo Diesel Engine, Axial Hydraulic Pump or Slew Bearing" align="center" position="0 -0.22 0.02" width="2.4" color="#a0d0ff"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- 3D Toggle Button -->
+      <a-entity position="0 0.8 2.8" rotation="-25 0 0">
+        <a-box id="btn-ex-explode-3d" class="clickable" width="1.4" height="0.4" depth="0.15" material="color: #ffaa00; emissive: #ffaa00; emissiveIntensity: 0.5" mixin="interactable-hover" onclick="toggleExplodeMachine('excavator')">
+          <a-text value="💥 EXPLODE ENGINE" align="center" position="0 0 0.09" width="3.0" color="#000"></a-text>
+        </a-box>
+      </a-entity>
+
+      <!-- EXPLODABLE EXCAVATOR ROOT (Rotated 135 deg to face diesel engine & hydraulics toward viewer) -->
+      <a-entity id="ex-assembly-root" position="0 1.2 0" rotation="10 -135 0">
+        
+        <!-- FIXED TRACK UNDERCARRIAGE -->
+        <a-box position="-1.0 -0.4 0" width="0.5" height="0.6" depth="3.4" mixin="metal-cast-iron"></a-box>
+        <a-box position="1.0 -0.4 0" width="0.5" height="0.6" depth="3.4" mixin="metal-cast-iron"></a-box>
+        <a-cylinder position="0 -0.1 0" radius="0.8" height="0.2" mixin="metal-steel"></a-cylinder>
+
+        <!-- ========================================== -->
+        <!-- EXCAVATOR PART 1: CABIN & BODY HOOD (Translates Left & Up: X -2.2, Y +1.5) -->
+        <!-- ========================================== -->
+        <a-entity id="ex-part-cab" class="explodable-part" data-part="ex-cab" position="0 0 0">
+          <a-box position="-0.7 0.8 0.4" width="1.1" height="1.5" depth="1.4" mixin="metal-yellow"></a-box>
+          <a-box position="-0.7 0.8 1.11" width="0.9" height="1.3" depth="0.02" mixin="glass-cutaway"></a-box>
+          <!-- Counterweight & Engine Hood -->
+          <a-box position="0 0.6 -1.2" width="2.2" height="1.2" depth="1.6" mixin="metal-yellow"></a-box>
+
+          <!-- INVISIBLE HITBOX FOR CAB & HOOD -->
+          <a-box 
+            class="clickable" 
+            position="-0.3 0.8 0" 
+            width="2.6" 
+            height="1.8" 
+            depth="2.8" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Excavator Cab & Body Cowling', 'Structure & Operator Safety', 'Reinforced ROPS/FOPS Operator Cab & Counterweight: High-tensile steel roll cage with digital fly-by-wire hydraulic joysticks and HVAC climate system.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="CABIN & HOOD" align="center" position="-0.7 1.8 0.4" width="2.4" color="#ffaa00"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- EXCAVATOR PART 2: TURBO DIESEL ENGINE BLOCK (Internal Center) -->
+        <!-- ========================================== -->
+        <a-entity id="ex-part-engine" position="0 0.5 -1.0">
+          <a-box width="0.9" height="0.8" depth="1.1" mixin="metal-cast-iron"></a-box>
+          <!-- Cylinder Head & Turbocharger Pipe -->
+          <a-cylinder position="0 0.45 0" radius="0.35" height="0.8" rotation="0 0 90" mixin="metal-copper"></a-cylinder>
+          <a-cylinder position="0.5 0.5 0.2" radius="0.08" height="0.6" mixin="metal-steel"></a-cylinder>
+
+          <!-- INVISIBLE HITBOX FOR DIESEL ENGINE -->
+          <a-box 
+            class="clickable" 
+            position="0 0 0" 
+            width="1.2" 
+            height="1.2" 
+            depth="1.4" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Turbocharged Diesel Engine Block', 'Internal Combustion Powertrain', '4.8L Tier-4 Final Turbo-Diesel Engine: 173 HP output with high-pressure common rail fuel injection and variable-geometry turbocharger.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="TURBO DIESEL ENGINE" align="center" position="0 1.0 0" width="2.4" color="#00f0ff"></a-text>
+        </a-entity>
+
+        <!-- ========================================== -->
+        <!-- EXCAVATOR PART 3: AXIAL PISTON HYDRAULIC PUMP & VALVES (Translates Right: X +2.0) -->
+        <!-- ========================================== -->
+        <a-entity id="ex-part-hydraulics" class="explodable-part" data-part="ex-pump" position="0 0 0">
+          <!-- Variable Displacement Pump Housing -->
+          <a-cylinder position="0.7 0.5 -0.8" rotation="0 0 90" radius="0.25" height="0.7" mixin="metal-steel"></a-cylinder>
+          <!-- Multi-Spool Control Valve Manifold Block -->
+          <a-box position="0.7 0.5 0.2" width="0.5" height="0.6" depth="0.7" mixin="metal-blue"></a-box>
+          <!-- High-Pressure Hydraulic Lines -->
+          <a-cylinder position="0.7 0.85 0.2" radius="0.03" height="0.4" mixin="metal-copper"></a-cylinder>
+
+          <!-- INVISIBLE HITBOX FOR HYDRAULIC PUMP -->
+          <a-box 
+            class="clickable" 
+            position="0.7 0.5 -0.3" 
+            width="1.2" 
+            height="1.2" 
+            depth="1.8" 
+            material="opacity: 0; transparent: true"
+            onmouseenter="updatePartHover('Axial Piston Hydraulic Pump & Spool Valves', 'Hydraulic Power Distribution', 'Dual Variable-Displacement Axial Piston Pumps: Delivers 350 bar (5,075 PSI) hydraulic pressure to boom, stick, and slewing drive motors.')"
+            onmouseleave="clearPartHover()">
+          </a-box>
+          <a-text value="AXIAL PISTON PUMP" align="center" position="0.7 1.2 -0.3" width="2.4" color="#ffaa00"></a-text>
+        </a-entity>
+
+      </a-entity>
+    </a-entity>
+
+
+    <!-- ========================================================================= -->
+    <!-- VR PLAYER RIG & GAZE / CONTROLLER LASER                                   -->
+    <!-- ========================================================================= -->
+    <a-entity id="player-rig" position="-12 0 -2">
+      <a-camera id="main-camera" position="0 1.6 0" look-controls="pointerLockEnabled: false" wasd-controls="acceleration: 20">
+        <!-- Interactive Gaze / Desktop Cursor -->
+        <a-cursor 
+          id="cursor-gaze"
+          raycaster="objects: .clickable, .teleport-target; far: 20"
+          cursor="fuse: false"
+          material="color: #00f0ff; shader: flat"
+          geometry="primitive: ring; radiusInner: 0.006; radiusOuter: 0.012"
+          position="0 0 -1">
+        </a-cursor>
+      </a-camera>
+
+      <!-- Meta Quest 3S VR Controllers -->
+      <a-entity 
+        id="left-hand"
+        oculus-touch-controls="hand: left"
+        laser-controls="hand: left"
+        raycaster="objects: .clickable, .teleport-target; far: 10; lineColor: #00f0ff; lineOpacity: 0.7">
+      </a-entity>
+
+      <a-entity 
+        id="right-hand"
+        oculus-touch-controls="hand: right"
+        laser-controls="hand: right"
+        raycaster="objects: .clickable, .teleport-target; far: 10; lineColor: #ffaa00; lineOpacity: 0.7">
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: EXPLODED-VIEW ENGINE, AUDIO SYNTHESIZER & INSPECTION SYSTEM   -->
+  <!-- ========================================================================= -->
+  <script>
+    /* =========================================================================
+       1. PROCEDURAL SOUND SYNTHESIS ENGINE (Web Audio API)
+       ========================================================================= */
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // High-Tech Component Hover Scanning Beep
+      playScanTone() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1800, this.ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.06);
+      }
+
+      // Mechanical Disassembly Servo Whine
+      playExplodeServo(isExpanding = true) {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        const startFreq = isExpanding ? 220 : 540;
+        const endFreq = isExpanding ? 540 : 220;
+        osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.45);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.45);
+      }
+    }
+
+    const soundEngine = new AudioEngine();
+
+    function toggleAudioEngine() {
+      soundEngine.enabled = !soundEngine.enabled;
+      document.getElementById('btn-audio-toggle').innerText = soundEngine.enabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+    }
+
+    function toggleHelpModal() {
+      document.getElementById('help-modal').classList.toggle('show');
+    }
+
+    /* =========================================================================
+       2. EXPLODED-VIEW KINEMATICS & STATE CONTROLLER
+       ========================================================================= */
+    const ExplodedLab = {
+      activeStation: 'pump', // 'pump', 'sub', 'excavator', 'hub'
+      
+      // Explode Progress (0.0 = Assembled, 1.0 = Fully Exploded)
+      stations: {
+        pump: { progress: 0, targetProgress: 0, exploded: false },
+        sub: { progress: 0, targetProgress: 0, exploded: false },
+        excavator: { progress: 0, targetProgress: 0, exploded: false }
+      }
+    };
+
+    function toggleCurrentExplode() {
+      const cur = ExplodedLab.activeStation;
+      if (cur === 'hub') return;
+      toggleExplodeMachine(cur);
+    }
+
+    function toggleExplodeMachine(machineKey) {
+      const state = ExplodedLab.stations[machineKey];
+      if (!state) return;
+      state.exploded = !state.exploded;
+      state.targetProgress = state.exploded ? 1.0 : 0.0;
+      soundEngine.playExplodeServo(state.exploded);
+
+      // Update 2D Slider
+      document.getElementById('explode-range-slider').value = state.targetProgress * 100;
+      document.getElementById('slider-pct-label').innerText = `${Math.round(state.targetProgress * 100)}%`;
+      document.getElementById('hud-status-label').innerText = state.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+      document.getElementById('btn-explode-toggle').innerText = state.exploded ? '🔧 ASSEMBLE MODEL [SPACE]' : '💥 EXPLODE VIEW [SPACE]';
+
+      // Update 3D In-Scene Button Text
+      if (machineKey === 'pump') {
+        const btnText = document.getElementById('btn-pump-text');
+        if (btnText) btnText.setAttribute('value', state.exploded ? '🔧 ASSEMBLE' : '💥 EXPLODE CUTAWAY');
+      }
+    }
+
+    function onSliderChange(val) {
+      const pct = parseFloat(val) / 100;
+      const cur = ExplodedLab.activeStation;
+      if (cur && ExplodedLab.stations[cur]) {
+        ExplodedLab.stations[cur].targetProgress = pct;
+        ExplodedLab.stations[cur].exploded = pct > 0.5;
+        document.getElementById('slider-pct-label').innerText = `${Math.round(val)}%`;
+        document.getElementById('hud-status-label').innerText = pct > 0.05 ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+      }
+    }
+
+    /* =========================================================================
+       3. TELEPORTATION & STATION MANAGEMENT
+       ========================================================================= */
+    function teleportToStation(stationKey) {
+      ExplodedLab.activeStation = stationKey;
+      const rig = document.getElementById('player-rig');
+
+      // Update Tabs
+      document.querySelectorAll('.machine-tab').forEach(t => t.classList.remove('active'));
+      const activeTab = document.getElementById(`tab-${stationKey}`);
+      if (activeTab) activeTab.classList.add('active');
+
+      if (stationKey === 'pump') {
+        rig.setAttribute('position', '-12 0 -2.5');
+        rig.setAttribute('rotation', '0 0 0');
+        updateStationOverview('500HP PUMP & MOTOR', 'Volute, Impeller, and Stator Assembly ready for cutaway inspection.');
+      } else if (stationKey === 'sub') {
+        rig.setAttribute('position', '0 0 -12.5');
+        rig.setAttribute('rotation', '0 0 0');
+        updateStationOverview('TRITON SUBMERSIBLE', 'Titanium Pressure Sphere, Battery Banks, and Vector Thrusters.');
+      } else if (stationKey === 'excavator') {
+        rig.setAttribute('position', '12 0 -2.5');
+        rig.setAttribute('rotation', '0 0 0');
+        updateStationOverview('JCB EXCAVATOR', 'Turbo-Diesel Engine Block, Axial Piston Pump, and Valve Spools.');
+      } else if (stationKey === 'hub') {
+        rig.setAttribute('position', '0 0 3');
+        rig.setAttribute('rotation', '0 0 0');
+        updateStationOverview('CENTRAL LABORATORY HUB', 'Select any machinery bay to inspect its exploded-view cutaway.');
+      }
+
+      // Sync slider with current station
+      const st = ExplodedLab.stations[stationKey];
+      if (st) {
+        document.getElementById('explode-range-slider').value = st.targetProgress * 100;
+        document.getElementById('slider-pct-label').innerText = `${Math.round(st.targetProgress * 100)}%`;
+        document.getElementById('hud-status-label').innerText = st.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+      }
+    }
+
+    function updateStationOverview(title, desc) {
+      document.getElementById('hud-part-name').innerText = title;
+      document.getElementById('hud-part-desc').innerText = desc;
+      document.getElementById('hud-subsystem-label').innerText = 'STATION INSPECTION';
+    }
+
+    /* =========================================================================
+       4. 3D HOVER / GAZE INSPECTION CALLOUT HANDLERS
+       ========================================================================= */
+    function updatePartHover(partName, subsystem, fullDesc) {
+      soundEngine.playScanTone();
+      
+      // Update 2D Inspector Card
+      document.getElementById('hud-part-name').innerText = partName;
+      document.getElementById('hud-subsystem-label').innerText = `SUBSYSTEM: ${subsystem.toUpperCase()}`;
+      document.getElementById('hud-part-desc').innerText = fullDesc;
+
+      // Update 3D Floating In-Scene #info-panel
+      const infoPanel = document.getElementById('info-panel');
+      const infoSub = document.getElementById('info-panel-sub');
+      if (infoPanel) infoPanel.setAttribute('value', `${partName.toUpperCase()}\n${subsystem}`);
+      if (infoSub) infoSub.setAttribute('value', fullDesc);
+
+      const subInfo = document.getElementById('sub-info-panel');
+      if (subInfo) subInfo.setAttribute('value', `${partName.toUpperCase()}\n${subsystem}`);
+    }
+
+    function clearPartHover() {
+      // Clear or reset to station summary
+      const infoPanel = document.getElementById('info-panel');
+      if (infoPanel) infoPanel.setAttribute('value', '500 HP PUMP ASSEMBLY // INSPECTION MODE');
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { e.preventDefault(); toggleCurrentExplode(); }
+      if (e.key === '1') teleportToStation('pump');
+      if (e.key === '2') teleportToStation('excavator');
+      if (e.key === '3') teleportToStation('sub');
+      if (e.key === '0') teleportToStation('hub');
+      if (e.key === 'h' || e.key === 'H') toggleHelpModal();
+    });
+
+    /* =========================================================================
+       5. REAL-TIME ANIMATION LOOP (INTERPOLATES EXPLODED PART POSITIONS)
+       ========================================================================= */
+    function animationLoop() {
+      // 1. Interpolate Pump Exploded View
+      const pState = ExplodedLab.stations.pump;
+      pState.progress += (pState.targetProgress - pState.progress) * 0.08;
+      const pP = pState.progress;
+
+      // Volute Casing translates Left (X: 0 to -2.0)
+      const partVolute = document.getElementById('part-volute');
+      if (partVolute) partVolute.setAttribute('position', `${-2.0 * pP} 0 0`);
+
+      // Drive Motor translates Right (X: 0 to +2.2)
+      const partMotor = document.getElementById('part-motor');
+      if (partMotor) partMotor.setAttribute('position', `${2.2 * pP} 0 0`);
+
+      // Spin the Impeller dynamically
+      const impeller = document.getElementById('spinning-impeller');
+      if (impeller) {
+        const curX = (impeller.getAttribute('rotation').x || 0) + 4;
+        impeller.setAttribute('rotation', `${curX} 0 0`);
+      }
+
+      // 2. Interpolate Submarine Exploded View
+      const sState = ExplodedLab.stations.sub;
+      sState.progress += (sState.targetProgress - sState.progress) * 0.08;
+      const sP = sState.progress;
+
+      const subLeft = document.getElementById('sub-part-left-hull');
+      if (subLeft) subLeft.setAttribute('position', `${-2.6 * sP} 0 0`);
+
+      const subRight = document.getElementById('sub-part-right-hull');
+      if (subRight) subRight.setAttribute('position', `${2.6 * sP} 0 0`);
+
+      const subBat = document.getElementById('sub-part-battery');
+      if (subBat) subBat.setAttribute('position', `0 ${-1.4 * sP} 0`);
+
+      const subThruster = document.getElementById('sub-part-thrusters');
+      if (subThruster) subThruster.setAttribute('position', `0 0 ${-2.0 * sP}`);
+
+      // 3. Interpolate Excavator Exploded View
+      const eState = ExplodedLab.stations.excavator;
+      eState.progress += (eState.targetProgress - eState.progress) * 0.08;
+      const eP = eState.progress;
+
+      const exCab = document.getElementById('ex-part-cab');
+      if (exCab) exCab.setAttribute('position', `${-2.0 * eP} ${1.2 * eP} 0`);
+
+      const exPump = document.getElementById('ex-part-hydraulics');
+      if (exPump) exPump.setAttribute('position', `${1.8 * eP} 0 0`);
+
+      // 4. Proximity Auto-Expansion Check based on Player Position
+      const rig = document.getElementById('player-rig');
+      if (rig) {
+        const rPos = rig.getAttribute('position');
+        if (rPos) {
+          // Check distance to Pump (-12, 0, -6)
+          const distPump = Math.hypot(rPos.x - (-12), rPos.z - (-6));
+          if (distPump < 4.2 && !pState.exploded && pState.targetProgress === 0) {
+            toggleExplodeMachine('pump');
+          }
+          // Check distance to Sub (0, 0, -17)
+          const distSub = Math.hypot(rPos.x - 0, rPos.z - (-17));
+          if (distSub < 4.8 && !sState.exploded && sState.targetProgress === 0) {
+            toggleExplodeMachine('sub');
+          }
+          // Check distance to Excavator (12, 0, -6)
+          const distEx = Math.hypot(rPos.x - 12, rPos.z - (-6));
+          if (distEx < 4.2 && !eState.exploded && eState.targetProgress === 0) {
+            toggleExplodeMachine('excavator');
+          }
+        }
+      }
+
+      requestAnimationFrame(animationLoop);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      teleportToStation('pump');
+      animationLoop();
+    });
+  </script>
+</body>
+</html>
