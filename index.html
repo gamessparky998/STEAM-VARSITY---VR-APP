@@ -869,42 +869,99 @@
         </a-cursor>
 
         <!-- ========================================================================= -->
-        <!-- PERSISTENT 3D VR HUD PANEL (Positioned at 0.85m distance in front of view) -->
+        <!-- PERSISTENT 3D VR HUD PANEL WITH 3D EXPLOSION SLIDER (Distance: 0.80m)     -->
         <!-- ========================================================================= -->
-        <a-entity id="vr-persistent-hud" position="0 -0.38 -0.85" rotation="-15 0 0">
+        <a-entity id="vr-persistent-hud" position="0 -0.36 -0.80" rotation="-12 0 0">
           <!-- Glass Panel Backdrop -->
-          <a-plane width="1.2" height="0.22" material="color: #060e1a; opacity: 0.88; transparent: true; roughness: 0.2; metalness: 0.8"></a-plane>
-          <a-box position="0 0.11 0" width="1.2" height="0.005" depth="0.01" mixin="neon-cyan"></a-box>
-          <a-box position="0 -0.11 0" width="1.2" height="0.005" depth="0.01" mixin="neon-cyan"></a-box>
+          <a-plane width="1.30" height="0.42" material="color: #060e1a; opacity: 0.92; transparent: true; roughness: 0.2; metalness: 0.8"></a-plane>
+          <a-box position="0 0.21 0" width="1.30" height="0.006" depth="0.01" mixin="neon-cyan"></a-box>
+          <a-box position="0 -0.21 0" width="1.30" height="0.006" depth="0.01" mixin="neon-cyan"></a-box>
+          <a-box position="-0.65 0 0" width="0.006" height="0.42" depth="0.01" mixin="neon-cyan"></a-box>
+          <a-box position="0.65 0 0" width="0.006" height="0.42" depth="0.01" mixin="neon-cyan"></a-box>
 
-          <!-- Status Indicator Text -->
-          <a-text id="vr-hud-status-text" value="STATION: 500HP PUMP | 0% EXPLODED" align="center" position="0 0.065 0.01" width="1.5" color="#00f0ff" font="kelsonsans"></a-text>
+          <!-- TIER 1: STATION QUICK-JUMP TABS & AUDIO (Y = +0.145) -->
+          <a-entity position="0 0.145 0">
+            <!-- Button: Pump -->
+            <a-box id="vr-btn-pump" class="clickable" position="-0.46 0 0.015" width="0.22" height="0.065" depth="0.02" material="color: #00f0ff; emissive: #00f0ff; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('pump')">
+              <a-text value="⚙️ PUMP" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
+            </a-box>
 
-          <!-- 3D Interactive VR Buttons -->
-          <!-- Button 1: Toggle Explode / Assemble -->
-          <a-box id="vr-btn-explode" class="clickable" position="-0.44 -0.03 0.015" width="0.24" height="0.075" depth="0.02" material="color: #ffb700; emissive: #ffb700; emissiveIntensity: 0.4" mixin="interactable-hover" onclick="toggleCurrentExplode()">
-            <a-text id="vr-btn-explode-text" value="💥 EXPLODE" align="center" position="0 0 0.015" width="1.4" color="#000"></a-text>
-          </a-box>
+            <!-- Button: Excavator -->
+            <a-box id="vr-btn-ex" class="clickable" position="-0.21 0 0.015" width="0.25" height="0.065" depth="0.02" material="color: #ffaa00; emissive: #ffaa00; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('excavator')">
+              <a-text value="🚜 EXCAVATOR" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
+            </a-box>
 
-          <!-- Button 2: Jump to Pump Station -->
-          <a-box id="vr-btn-pump" class="clickable" position="-0.18 -0.03 0.015" width="0.22" height="0.075" depth="0.02" material="color: #00f0ff; emissive: #00f0ff; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('pump')">
-            <a-text value="⚙️ PUMP" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
-          </a-box>
+            <!-- Button: Submersible -->
+            <a-box id="vr-btn-sub" class="clickable" position="0.06 0 0.015" width="0.22" height="0.065" depth="0.02" material="color: #00ff88; emissive: #00ff88; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('sub')">
+              <a-text value="⚓ SUB" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
+            </a-box>
 
-          <!-- Button 3: Jump to Excavator Station -->
-          <a-box id="vr-btn-ex" class="clickable" position="0.08 -0.03 0.015" width="0.24" height="0.075" depth="0.02" material="color: #ffaa00; emissive: #ffaa00; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('excavator')">
-            <a-text value="🚜 EXCAVATOR" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
-          </a-box>
+            <!-- Button: Hub -->
+            <a-box id="vr-btn-hub" class="clickable" position="0.30 0 0.015" width="0.20" height="0.065" depth="0.02" material="color: #3a506b" mixin="interactable-hover" onclick="teleportToStation('hub')">
+              <a-text value="🏢 HUB" align="center" position="0 0 0.015" width="1.2" color="#fff"></a-text>
+            </a-box>
 
-          <!-- Button 4: Jump to Submarine Station -->
-          <a-box id="vr-btn-sub" class="clickable" position="0.34 -0.03 0.015" width="0.22" height="0.075" depth="0.02" material="color: #00ff88; emissive: #00ff88; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('sub')">
-            <a-text value="⚓ SUB" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
-          </a-box>
+            <!-- Button: Audio Mute -->
+            <a-box id="vr-btn-audio" class="clickable" position="0.50 0 0.015" width="0.14" height="0.065" depth="0.02" material="color: #1a2936" mixin="interactable-hover" onclick="toggleAudioEngine()">
+              <a-text id="vr-btn-audio-text" value="🔊" align="center" position="0 0 0.015" width="1.3" color="#00f0ff"></a-text>
+            </a-box>
+          </a-entity>
 
-          <!-- Button 5: Audio Mute/Unmute -->
-          <a-box id="vr-btn-audio" class="clickable" position="0.52 -0.03 0.015" width="0.10" height="0.075" depth="0.02" material="color: #1a2936" mixin="interactable-hover" onclick="toggleAudioEngine()">
-            <a-text id="vr-btn-audio-text" value="🔊" align="center" position="0 0 0.015" width="1.2" color="#00f0ff"></a-text>
-          </a-box>
+          <!-- TIER 2: STATUS & REAL-TIME DISASSEMBLY EXPANSION READOUT (Y = +0.065) -->
+          <a-text id="vr-hud-status-text" value="STATION: 500HP PUMP // EXPANSION: 0%" align="center" position="0 0.065 0.015" width="1.65" color="#00f0ff" font="kelsonsans"></a-text>
+
+          <!-- TIER 3: PERSISTENT 3D VR DISASSEMBLY SLIDER (Y = -0.015) -->
+          <a-entity id="vr-slider-container" position="0 -0.015 0.015">
+            <!-- Step Decrement Button [-10%] -->
+            <a-box id="vr-slider-minus" class="clickable" position="-0.51 0 0" width="0.12" height="0.065" depth="0.02" material="color: #102235; emissive: #00f0ff; emissiveIntensity: 0.2" mixin="interactable-hover" onclick="stepVRSlider(-0.1)">
+              <a-text value="[-10%]" align="center" position="0 0 0.015" width="1.3" color="#00f0ff"></a-text>
+            </a-box>
+
+            <!-- 3D Slider Rail Background Groove -->
+            <a-box id="vr-slider-groove" position="0 0 0" width="0.74" height="0.024" depth="0.012" material="color: #0a1420; roughness: 0.8; metalness: 0.5"></a-box>
+            <a-box position="0 0.014 0" width="0.74" height="0.002" depth="0.014" mixin="neon-cyan"></a-box>
+            <a-box position="0 -0.014 0" width="0.74" height="0.002" depth="0.014" mixin="neon-cyan"></a-box>
+
+            <!-- Dynamic Glowing Progress Fill Bar (Grows left-to-right) -->
+            <a-box id="vr-slider-fill" position="-0.37 0 0.006" width="0.005" height="0.02" depth="0.012" material="color: #00f0ff; emissive: #00f0ff; emissiveIntensity: 0.7"></a-box>
+
+            <!-- Interactive Glowing Slider Thumb / Handle Knob -->
+            <a-entity id="vr-slider-knob" position="-0.37 0 0.020">
+              <a-box width="0.05" height="0.065" depth="0.025" material="color: #ffb700; emissive: #ffb700; emissiveIntensity: 0.8" mixin="interactable-hover"></a-box>
+              <a-sphere position="0 0 0.014" radius="0.015" material="color: #ffffff; emissive: #ffb700; emissiveIntensity: 0.9"></a-sphere>
+            </a-entity>
+
+            <!-- Invisible Wide Interactive Laser/Gaze Touch Hitbox Over the entire Slider Track -->
+            <a-box id="vr-slider-track" class="clickable" position="0 0 0.018" width="0.76" height="0.09" depth="0.025" material="opacity: 0; transparent: true"></a-box>
+
+            <!-- Step Increment Button [+10%] -->
+            <a-box id="vr-slider-plus" class="clickable" position="0.51 0 0" width="0.12" height="0.065" depth="0.02" material="color: #102235; emissive: #00f0ff; emissiveIntensity: 0.2" mixin="interactable-hover" onclick="stepVRSlider(0.1)">
+              <a-text value="[+10%]" align="center" position="0 0 0.015" width="1.3" color="#00f0ff"></a-text>
+            </a-box>
+          </a-entity>
+
+          <!-- TIER 4: QUICK PRESETS & EXPLODE TOGGLE (Y = -0.115) -->
+          <a-entity position="0 -0.115 0.015">
+            <!-- Preset 0% (Assemble) -->
+            <a-box id="vr-btn-preset-0" class="clickable" position="-0.44 0 0" width="0.22" height="0.055" depth="0.02" material="color: #111e2e; emissive: #00f0ff; emissiveIntensity: 0.15" mixin="interactable-hover" onclick="setExplodeProgress(0.0)">
+              <a-text value="0% ASSEMBLE" align="center" position="0 0 0.015" width="1.15" color="#7ec8ff"></a-text>
+            </a-box>
+
+            <!-- Preset 50% (Half Cutaway) -->
+            <a-box id="vr-btn-preset-50" class="clickable" position="-0.18 0 0" width="0.22" height="0.055" depth="0.02" material="color: #111e2e; emissive: #00f0ff; emissiveIntensity: 0.15" mixin="interactable-hover" onclick="setExplodeProgress(0.5)">
+              <a-text value="50% HALF" align="center" position="0 0 0.015" width="1.15" color="#7ec8ff"></a-text>
+            </a-box>
+
+            <!-- Preset 100% (Explode) -->
+            <a-box id="vr-btn-preset-100" class="clickable" position="0.08 0 0" width="0.24" height="0.055" depth="0.02" material="color: #111e2e; emissive: #ffaa00; emissiveIntensity: 0.15" mixin="interactable-hover" onclick="setExplodeProgress(1.0)">
+              <a-text value="100% EXPLODE" align="center" position="0 0 0.015" width="1.15" color="#ffaa00"></a-text>
+            </a-box>
+
+            <!-- Toggle Button (Explode/Assemble) -->
+            <a-box id="vr-btn-explode" class="clickable" position="0.38 0 0" width="0.28" height="0.055" depth="0.02" material="color: #ffb700; emissive: #ffb700; emissiveIntensity: 0.45" mixin="interactable-hover" onclick="toggleCurrentExplode()">
+              <a-text id="vr-btn-explode-text" value="💥 TOGGLE" align="center" position="0 0 0.015" width="1.25" color="#000"></a-text>
+            </a-box>
+          </a-entity>
         </a-entity>
       </a-camera>
 
@@ -1156,7 +1213,7 @@
     }
 
     /* =========================================================================
-       2. EXPLODED-VIEW KINEMATICS & STATE CONTROLLER
+       2. EXPLODED-VIEW KINEMATICS, 3D VR SLIDER & STATE CONTROLLER
        ========================================================================= */
     const ExplodedLab = {
       activeStation: 'pump', // 'pump', 'sub', 'excavator', 'hub'
@@ -1167,23 +1224,107 @@
       }
     };
 
+    /**
+     * Master State Update: Sets expansion progress (0.0 to 1.0) and updates
+     * 2D Desktop HUD, 3D in-scene Dais indicators, and the Persistent 3D VR Slider & HUD.
+     */
+    function setExplodeProgress(val, machineKey) {
+      const cur = machineKey || ExplodedLab.activeStation;
+      if (!cur || !ExplodedLab.stations[cur]) return;
+
+      const pct = Math.max(0, Math.min(1.0, val));
+      const st = ExplodedLab.stations[cur];
+      st.targetProgress = pct;
+      st.exploded = pct > 0.5;
+
+      // 1. Update 2D Desktop Range Slider & Status Labels
+      const slider = document.getElementById('explode-range-slider');
+      if (slider) slider.value = Math.round(pct * 100);
+      const pctLabel = document.getElementById('slider-pct-label');
+      if (pctLabel) pctLabel.innerText = `${Math.round(pct * 100)}%`;
+      const hudStatus = document.getElementById('hud-status-label');
+      if (hudStatus) hudStatus.innerText = pct > 0.05 ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+      const btnExpToggle = document.getElementById('btn-explode-toggle');
+      if (btnExpToggle) btnExpToggle.innerText = st.exploded ? '🔧 ASSEMBLE MODEL [SPACE]' : '💥 EXPLODE VIEW [SPACE]';
+
+      // 2. Update 3D In-Scene Dais Button Text
+      if (cur === 'pump') {
+        const btnText = document.getElementById('btn-pump-text');
+        if (btnText) btnText.setAttribute('value', st.exploded ? '🔧 ASSEMBLE' : '💥 EXPLODE CUTAWAY');
+      }
+
+      // 3. Update Persistent 3D VR HUD and 3D VR Slider Track
+      updateVRHudStatus(cur, st.exploded, pct);
+    }
+
+    /**
+     * Incremental adjustment for VR Slider step buttons ([-10%] / [+10%])
+     */
+    function stepVRSlider(delta) {
+      const cur = ExplodedLab.activeStation;
+      if (!cur || !ExplodedLab.stations[cur]) return;
+      const currentP = ExplodedLab.stations[cur].targetProgress || 0;
+      soundEngine.playScanTone();
+      setExplodeProgress(currentP + delta);
+    }
+
+    /**
+     * Interactive Laser/Gaze Touch Handler on the 3D VR Slider Track
+     */
+    function handleVRTrackClick(evt) {
+      const trackEl = document.getElementById('vr-slider-track');
+      if (!trackEl) return;
+      
+      let pct = 0.5;
+      if (evt && evt.detail && evt.detail.intersection && evt.detail.intersection.point) {
+        // Convert world raycast intersection point to track's local coordinates
+        const trackObj = trackEl.object3D;
+        const localPt = trackObj.worldToLocal(evt.detail.intersection.point.clone());
+        // Track width is 0.74m (-0.37m to +0.37m)
+        pct = (localPt.x + 0.37) / 0.74;
+        pct = Math.max(0, Math.min(1.0, pct));
+      }
+      soundEngine.playScanTone();
+      setExplodeProgress(pct);
+    }
+
+    /**
+     * Update Persistent 3D VR HUD Text, Button Labels, and 3D Slider Knob/Fill
+     */
     function updateVRHudStatus(stationKey, isExploded, progress) {
       const vrStatus = document.getElementById('vr-hud-status-text');
       const vrExplodeBtn = document.getElementById('vr-btn-explode-text');
       const pct = Math.round((progress || 0) * 100);
       const nameMap = {
-        pump: '500HP PUMP',
-        sub: 'TRITON SUB',
+        pump: '500HP PUMP & MOTOR',
+        sub: 'TRITON SUBMERSIBLE',
         excavator: 'JCB EXCAVATOR',
         hub: 'CENTRAL LAB'
       };
       const displayName = nameMap[stationKey] || (stationKey ? stationKey.toUpperCase() : 'CENTRAL LAB');
       
       if (vrStatus) {
-        vrStatus.setAttribute('value', `STATION: ${displayName} | ${pct}% EXPLODED`);
+        vrStatus.setAttribute('value', `STATION: ${displayName} // EXPANSION: ${pct}%`);
       }
       if (vrExplodeBtn) {
         vrExplodeBtn.setAttribute('value', isExploded ? '🔧 ASSEMBLE' : '💥 EXPLODE');
+      }
+
+      // Update 3D VR Slider Knob Position and Progress Fill Bar Width
+      const knob = document.getElementById('vr-slider-knob');
+      const fill = document.getElementById('vr-slider-fill');
+      const trackWidth = 0.74;
+      const p = Math.max(0, Math.min(1.0, progress !== undefined ? progress : 0));
+
+      if (knob) {
+        const knobX = -0.37 + p * trackWidth;
+        knob.setAttribute('position', `${knobX.toFixed(3)} 0 0.020`);
+      }
+      if (fill) {
+        const fillWidth = Math.max(0.005, p * trackWidth);
+        const fillX = -0.37 + fillWidth / 2;
+        fill.setAttribute('position', `${fillX.toFixed(3)} 0 0.006`);
+        fill.setAttribute('width', fillWidth.toFixed(3));
       }
     }
 
@@ -1196,44 +1337,14 @@
     function toggleExplodeMachine(machineKey) {
       const state = ExplodedLab.stations[machineKey];
       if (!state) return;
-      state.exploded = !state.exploded;
-      state.targetProgress = state.exploded ? 1.0 : 0.0;
-      soundEngine.playExplodeServo(state.exploded);
-
-      // Update 2D Slider & Labels
-      const slider = document.getElementById('explode-range-slider');
-      if (slider) slider.value = state.targetProgress * 100;
-      const pctLabel = document.getElementById('slider-pct-label');
-      if (pctLabel) pctLabel.innerText = `${Math.round(state.targetProgress * 100)}%`;
-      const hudStatus = document.getElementById('hud-status-label');
-      if (hudStatus) hudStatus.innerText = state.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
-      const btnExpToggle = document.getElementById('btn-explode-toggle');
-      if (btnExpToggle) btnExpToggle.innerText = state.exploded ? '🔧 ASSEMBLE MODEL [SPACE]' : '💥 EXPLODE VIEW [SPACE]';
-
-      // Update In-Scene 3D Dais Button Text
-      if (machineKey === 'pump') {
-        const btnText = document.getElementById('btn-pump-text');
-        if (btnText) btnText.setAttribute('value', state.exploded ? '🔧 ASSEMBLE' : '💥 EXPLODE CUTAWAY');
-      }
-
-      // Update Persistent 3D VR HUD
-      updateVRHudStatus(machineKey, state.exploded, state.targetProgress);
+      const newExploded = !state.exploded;
+      soundEngine.playExplodeServo(newExploded);
+      setExplodeProgress(newExploded ? 1.0 : 0.0, machineKey);
     }
 
     function onSliderChange(val) {
       const pct = parseFloat(val) / 100;
-      const cur = ExplodedLab.activeStation;
-      if (cur && ExplodedLab.stations[cur]) {
-        ExplodedLab.stations[cur].targetProgress = pct;
-        ExplodedLab.stations[cur].exploded = pct > 0.5;
-        const pctLabel = document.getElementById('slider-pct-label');
-        if (pctLabel) pctLabel.innerText = `${Math.round(val)}%`;
-        const hudStatus = document.getElementById('hud-status-label');
-        if (hudStatus) hudStatus.innerText = pct > 0.05 ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
-        
-        // Update Persistent 3D VR HUD
-        updateVRHudStatus(cur, ExplodedLab.stations[cur].exploded, pct);
-      }
+      setExplodeProgress(pct);
     }
 
     /* =========================================================================
@@ -1268,16 +1379,10 @@
         }
       }
 
-      // Sync slider and VR HUD with current station
+      // Sync 2D and 3D VR Slider with current station
       const st = ExplodedLab.stations[stationKey];
       if (st) {
-        const slider = document.getElementById('explode-range-slider');
-        if (slider) slider.value = st.targetProgress * 100;
-        const pctLabel = document.getElementById('slider-pct-label');
-        if (pctLabel) pctLabel.innerText = `${Math.round(st.targetProgress * 100)}%`;
-        const hudStatus = document.getElementById('hud-status-label');
-        if (hudStatus) hudStatus.innerText = st.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
-        updateVRHudStatus(stationKey, st.exploded, st.targetProgress);
+        setExplodeProgress(st.targetProgress, stationKey);
       } else {
         updateVRHudStatus(stationKey, false, 0);
       }
@@ -1332,7 +1437,7 @@
     });
 
     /* =========================================================================
-       5. VR HUD DIRECT EVENT BINDING
+       5. VR HUD & SLIDER DIRECT EVENT BINDING
        ========================================================================= */
     function setupVRHudEvents() {
       const bindClick = (id, fn) => {
@@ -1342,11 +1447,28 @@
           el.addEventListener('triggerdown', fn);
         }
       };
+
+      // Station Jump & Audio
       bindClick('vr-btn-explode', () => toggleCurrentExplode());
       bindClick('vr-btn-pump', () => teleportToStation('pump'));
       bindClick('vr-btn-ex', () => teleportToStation('excavator'));
       bindClick('vr-btn-sub', () => teleportToStation('sub'));
+      bindClick('vr-btn-hub', () => teleportToStation('hub'));
       bindClick('vr-btn-audio', () => toggleAudioEngine());
+
+      // 3D VR Slider Step Controls & Presets
+      bindClick('vr-slider-minus', () => stepVRSlider(-0.1));
+      bindClick('vr-slider-plus', () => stepVRSlider(0.1));
+      bindClick('vr-btn-preset-0', () => setExplodeProgress(0.0));
+      bindClick('vr-btn-preset-50', () => setExplodeProgress(0.5));
+      bindClick('vr-btn-preset-100', () => setExplodeProgress(1.0));
+
+      // 3D VR Slider Interactive Touch/Laser Track
+      const track = document.getElementById('vr-slider-track');
+      if (track) {
+        track.addEventListener('click', handleVRTrackClick);
+        track.addEventListener('triggerdown', handleVRTrackClick);
+      }
     }
 
     /* =========================================================================
