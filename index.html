@@ -854,9 +854,9 @@
 
 
     <!-- ========================================================================= -->
-    <!-- VR PLAYER RIG & GAZE / CONTROLLER LASER                                   -->
+    <!-- VR PLAYER RIG WITH JOYSTICK LOCOMOTION & PERSISTENT 3D VR HUD               -->
     <!-- ========================================================================= -->
-    <a-entity id="player-rig" position="-12 0 -2">
+    <a-entity id="player-rig" position="-12 0 -2" xr-locomotion="speed: 4.5">
       <a-camera id="main-camera" position="0 1.6 0" look-controls="pointerLockEnabled: false" wasd-controls="acceleration: 20">
         <!-- Interactive Gaze / Desktop Cursor -->
         <a-cursor 
@@ -867,9 +867,48 @@
           geometry="primitive: ring; radiusInner: 0.006; radiusOuter: 0.012"
           position="0 0 -1">
         </a-cursor>
+
+        <!-- ========================================================================= -->
+        <!-- PERSISTENT 3D VR HUD PANEL (Positioned at 0.85m distance in front of view) -->
+        <!-- ========================================================================= -->
+        <a-entity id="vr-persistent-hud" position="0 -0.38 -0.85" rotation="-15 0 0">
+          <!-- Glass Panel Backdrop -->
+          <a-plane width="1.2" height="0.22" material="color: #060e1a; opacity: 0.88; transparent: true; roughness: 0.2; metalness: 0.8"></a-plane>
+          <a-box position="0 0.11 0" width="1.2" height="0.005" depth="0.01" mixin="neon-cyan"></a-box>
+          <a-box position="0 -0.11 0" width="1.2" height="0.005" depth="0.01" mixin="neon-cyan"></a-box>
+
+          <!-- Status Indicator Text -->
+          <a-text id="vr-hud-status-text" value="STATION: 500HP PUMP | 0% EXPLODED" align="center" position="0 0.065 0.01" width="1.5" color="#00f0ff" font="kelsonsans"></a-text>
+
+          <!-- 3D Interactive VR Buttons -->
+          <!-- Button 1: Toggle Explode / Assemble -->
+          <a-box id="vr-btn-explode" class="clickable" position="-0.44 -0.03 0.015" width="0.24" height="0.075" depth="0.02" material="color: #ffb700; emissive: #ffb700; emissiveIntensity: 0.4" mixin="interactable-hover" onclick="toggleCurrentExplode()">
+            <a-text id="vr-btn-explode-text" value="💥 EXPLODE" align="center" position="0 0 0.015" width="1.4" color="#000"></a-text>
+          </a-box>
+
+          <!-- Button 2: Jump to Pump Station -->
+          <a-box id="vr-btn-pump" class="clickable" position="-0.18 -0.03 0.015" width="0.22" height="0.075" depth="0.02" material="color: #00f0ff; emissive: #00f0ff; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('pump')">
+            <a-text value="⚙️ PUMP" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
+          </a-box>
+
+          <!-- Button 3: Jump to Excavator Station -->
+          <a-box id="vr-btn-ex" class="clickable" position="0.08 -0.03 0.015" width="0.24" height="0.075" depth="0.02" material="color: #ffaa00; emissive: #ffaa00; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('excavator')">
+            <a-text value="🚜 EXCAVATOR" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
+          </a-box>
+
+          <!-- Button 4: Jump to Submarine Station -->
+          <a-box id="vr-btn-sub" class="clickable" position="0.34 -0.03 0.015" width="0.22" height="0.075" depth="0.02" material="color: #00ff88; emissive: #00ff88; emissiveIntensity: 0.3" mixin="interactable-hover" onclick="teleportToStation('sub')">
+            <a-text value="⚓ SUB" align="center" position="0 0 0.015" width="1.3" color="#000"></a-text>
+          </a-box>
+
+          <!-- Button 5: Audio Mute/Unmute -->
+          <a-box id="vr-btn-audio" class="clickable" position="0.52 -0.03 0.015" width="0.10" height="0.075" depth="0.02" material="color: #1a2936" mixin="interactable-hover" onclick="toggleAudioEngine()">
+            <a-text id="vr-btn-audio-text" value="🔊" align="center" position="0 0 0.015" width="1.2" color="#00f0ff"></a-text>
+          </a-box>
+        </a-entity>
       </a-camera>
 
-      <!-- Meta Quest 3S VR Controllers -->
+      <!-- Meta Quest 3S VR Left Controller (Handles Left Joystick Locomotion) -->
       <a-entity 
         id="left-hand"
         oculus-touch-controls="hand: left"
@@ -877,6 +916,7 @@
         raycaster="objects: .clickable, .teleport-target; far: 10; lineColor: #00f0ff; lineOpacity: 0.7">
       </a-entity>
 
+      <!-- Meta Quest 3S VR Right Controller (Handles Right Joystick Snap Turning) -->
       <a-entity 
         id="right-hand"
         oculus-touch-controls="hand: right"
@@ -891,6 +931,162 @@
   <!-- JAVASCRIPT: EXPLODED-VIEW ENGINE, AUDIO SYNTHESIZER & INSPECTION SYSTEM   -->
   <!-- ========================================================================= -->
   <script>
+    /* =========================================================================
+       0. A-FRAME CUSTOM COMPONENTS (VR LOCOMOTION & PROXIMITY)
+       ========================================================================= */
+    AFRAME.registerComponent('proximity-trigger', {
+      schema: {
+        machine: { type: 'string', default: 'pump' },
+        radius: { type: 'number', default: 4.5 }
+      }
+    });
+
+    /**
+     * XR Locomotion Component:
+     * - Left thumbstick / joystick: Smooth translation (forward, backward, strafe)
+     *   oriented relative to the user's head gaze / camera yaw.
+     * - Right thumbstick / joystick: Smooth 45-degree snap turning with debounce.
+     * - Supports Meta Quest 3S, Quest 2/3/Pro, Pico, HTC Vive, and WebXR gamepads.
+     */
+    AFRAME.registerComponent('xr-locomotion', {
+      schema: {
+        speed: { type: 'number', default: 4.5 },
+        snapTurnAngle: { type: 'number', default: 45 }
+      },
+
+      init: function () {
+        this.cameraEl = this.el.querySelector('a-camera') || document.getElementById('main-camera');
+        this.leftHand = document.getElementById('left-hand');
+        this.rightHand = document.getElementById('right-hand');
+        this.snapReady = true;
+        this.moveVector = new THREE.Vector3();
+        this.forward = new THREE.Vector3();
+        this.right = new THREE.Vector3();
+        this.up = new THREE.Vector3(0, 1, 0);
+
+        // Fallback cached axes from event listeners
+        this.leftAxis = { x: 0, y: 0 };
+        this.rightAxis = { x: 0, y: 0 };
+
+        if (this.leftHand) {
+          this.leftHand.addEventListener('axismove', (evt) => {
+            const axis = evt.detail.axis;
+            if (axis && axis.length >= 2) {
+              this.leftAxis.x = axis.length >= 4 ? axis[2] : axis[0];
+              this.leftAxis.y = axis.length >= 4 ? axis[3] : axis[1];
+            }
+          });
+        }
+
+        if (this.rightHand) {
+          this.rightHand.addEventListener('axismove', (evt) => {
+            const axis = evt.detail.axis;
+            if (axis && axis.length >= 2) {
+              this.rightAxis.x = axis.length >= 4 ? axis[2] : axis[0];
+              this.rightAxis.y = axis.length >= 4 ? axis[3] : axis[1];
+            }
+          });
+        }
+      },
+
+      tick: function (time, delta) {
+        if (!delta) return;
+        const dt = Math.min(delta / 1000, 0.1);
+
+        let moveX = 0;
+        let moveZ = 0;
+        let turnX = 0;
+
+        // 1. Poll standard WebXR Gamepads (Left = Locomotion, Right = Snap Turn)
+        if (navigator.getGamepads) {
+          const gamepads = navigator.getGamepads();
+          for (let i = 0; i < gamepads.length; i++) {
+            const gp = gamepads[i];
+            if (!gp || !gp.connected) continue;
+
+            // Identify Left Controller (Translation)
+            if (gp.hand === 'left' || (gp.id && gp.id.toLowerCase().includes('left'))) {
+              let x = 0, y = 0;
+              if (gp.axes.length >= 4 && (Math.abs(gp.axes[2]) > 0.1 || Math.abs(gp.axes[3]) > 0.1)) {
+                x = gp.axes[2];
+                y = gp.axes[3];
+              } else if (gp.axes.length >= 2 && (Math.abs(gp.axes[0]) > 0.1 || Math.abs(gp.axes[1]) > 0.1)) {
+                x = gp.axes[0];
+                y = gp.axes[1];
+              }
+              if (Math.abs(x) > 0.12) moveX = x;
+              if (Math.abs(y) > 0.12) moveZ = y;
+            }
+
+            // Identify Right Controller (Snap Turning)
+            if (gp.hand === 'right' || (gp.id && gp.id.toLowerCase().includes('right'))) {
+              let rx = 0;
+              if (gp.axes.length >= 4 && Math.abs(gp.axes[2]) > 0.1) {
+                rx = gp.axes[2];
+              } else if (gp.axes.length >= 2 && Math.abs(gp.axes[0]) > 0.1) {
+                rx = gp.axes[0];
+              }
+              if (Math.abs(rx) > 0.12) turnX = rx;
+            }
+          }
+        }
+
+        // Fallback to axismove event data if polling produced zero
+        if (moveX === 0 && Math.abs(this.leftAxis.x) > 0.12) moveX = this.leftAxis.x;
+        if (moveZ === 0 && Math.abs(this.leftAxis.y) > 0.12) moveZ = this.leftAxis.y;
+        if (turnX === 0 && Math.abs(this.rightAxis.x) > 0.12) turnX = this.rightAxis.x;
+
+        // 2. Perform Snap Turning on Right Thumbstick
+        if (Math.abs(turnX) > 0.55) {
+          if (this.snapReady) {
+            const snapDeg = (turnX > 0 ? -1 : 1) * this.data.snapTurnAngle;
+            const currentRot = this.el.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+            this.el.setAttribute('rotation', {
+              x: currentRot.x,
+              y: currentRot.y + snapDeg,
+              z: currentRot.z
+            });
+            this.snapReady = false;
+          }
+        } else if (Math.abs(turnX) < 0.2) {
+          this.snapReady = true;
+        }
+
+        // 3. Perform Left Joystick Locomotion (relative to camera yaw)
+        if (Math.abs(moveX) > 0.05 || Math.abs(moveZ) > 0.05) {
+          if (!this.cameraEl) this.cameraEl = document.getElementById('main-camera');
+          const camObj = this.cameraEl ? this.cameraEl.object3D : null;
+          if (!camObj) return;
+
+          // Compute forward vector from camera gaze projected onto horizontal ground plane
+          camObj.getWorldDirection(this.forward);
+          this.forward.y = 0;
+          this.forward.normalize();
+
+          // Compute right vector (forward x up)
+          this.right.crossVectors(this.forward, this.up).normalize();
+
+          // Combine forward/backward (-moveZ for pushing forward) and strafe (moveX)
+          this.moveVector.set(0, 0, 0);
+          this.moveVector.addScaledVector(this.forward, -moveZ);
+          this.moveVector.addScaledVector(this.right, moveX);
+          this.moveVector.normalize();
+
+          const speed = this.data.speed;
+          const mag = Math.min(1.0, Math.hypot(moveX, moveZ));
+          const displacement = this.moveVector.multiplyScalar(speed * mag * dt);
+
+          const rigPos = this.el.object3D.position;
+          rigPos.add(displacement);
+
+          // Constrain player within inspection hangar perimeter (-27m to 27m)
+          rigPos.x = Math.max(-27, Math.min(27, rigPos.x));
+          rigPos.z = Math.max(-27, Math.min(27, rigPos.z));
+          rigPos.y = 0;
+        }
+      }
+    });
+
     /* =========================================================================
        1. PROCEDURAL SOUND SYNTHESIS ENGINE (Web Audio API)
        ========================================================================= */
@@ -910,7 +1106,6 @@
         }
       }
 
-      // High-Tech Component Hover Scanning Beep
       playScanTone() {
         if (!this.enabled) return;
         this.init();
@@ -927,7 +1122,6 @@
         osc.stop(this.ctx.currentTime + 0.06);
       }
 
-      // Mechanical Disassembly Servo Whine
       playExplodeServo(isExpanding = true) {
         if (!this.enabled) return;
         this.init();
@@ -951,7 +1145,10 @@
 
     function toggleAudioEngine() {
       soundEngine.enabled = !soundEngine.enabled;
-      document.getElementById('btn-audio-toggle').innerText = soundEngine.enabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+      const btn2D = document.getElementById('btn-audio-toggle');
+      if (btn2D) btn2D.innerText = soundEngine.enabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+      const vrAudio = document.getElementById('vr-btn-audio-text');
+      if (vrAudio) vrAudio.setAttribute('value', soundEngine.enabled ? '🔊' : '🔇');
     }
 
     function toggleHelpModal() {
@@ -963,14 +1160,32 @@
        ========================================================================= */
     const ExplodedLab = {
       activeStation: 'pump', // 'pump', 'sub', 'excavator', 'hub'
-      
-      // Explode Progress (0.0 = Assembled, 1.0 = Fully Exploded)
       stations: {
         pump: { progress: 0, targetProgress: 0, exploded: false },
         sub: { progress: 0, targetProgress: 0, exploded: false },
         excavator: { progress: 0, targetProgress: 0, exploded: false }
       }
     };
+
+    function updateVRHudStatus(stationKey, isExploded, progress) {
+      const vrStatus = document.getElementById('vr-hud-status-text');
+      const vrExplodeBtn = document.getElementById('vr-btn-explode-text');
+      const pct = Math.round((progress || 0) * 100);
+      const nameMap = {
+        pump: '500HP PUMP',
+        sub: 'TRITON SUB',
+        excavator: 'JCB EXCAVATOR',
+        hub: 'CENTRAL LAB'
+      };
+      const displayName = nameMap[stationKey] || (stationKey ? stationKey.toUpperCase() : 'CENTRAL LAB');
+      
+      if (vrStatus) {
+        vrStatus.setAttribute('value', `STATION: ${displayName} | ${pct}% EXPLODED`);
+      }
+      if (vrExplodeBtn) {
+        vrExplodeBtn.setAttribute('value', isExploded ? '🔧 ASSEMBLE' : '💥 EXPLODE');
+      }
+    }
 
     function toggleCurrentExplode() {
       const cur = ExplodedLab.activeStation;
@@ -985,17 +1200,24 @@
       state.targetProgress = state.exploded ? 1.0 : 0.0;
       soundEngine.playExplodeServo(state.exploded);
 
-      // Update 2D Slider
-      document.getElementById('explode-range-slider').value = state.targetProgress * 100;
-      document.getElementById('slider-pct-label').innerText = `${Math.round(state.targetProgress * 100)}%`;
-      document.getElementById('hud-status-label').innerText = state.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
-      document.getElementById('btn-explode-toggle').innerText = state.exploded ? '🔧 ASSEMBLE MODEL [SPACE]' : '💥 EXPLODE VIEW [SPACE]';
+      // Update 2D Slider & Labels
+      const slider = document.getElementById('explode-range-slider');
+      if (slider) slider.value = state.targetProgress * 100;
+      const pctLabel = document.getElementById('slider-pct-label');
+      if (pctLabel) pctLabel.innerText = `${Math.round(state.targetProgress * 100)}%`;
+      const hudStatus = document.getElementById('hud-status-label');
+      if (hudStatus) hudStatus.innerText = state.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+      const btnExpToggle = document.getElementById('btn-explode-toggle');
+      if (btnExpToggle) btnExpToggle.innerText = state.exploded ? '🔧 ASSEMBLE MODEL [SPACE]' : '💥 EXPLODE VIEW [SPACE]';
 
-      // Update 3D In-Scene Button Text
+      // Update In-Scene 3D Dais Button Text
       if (machineKey === 'pump') {
         const btnText = document.getElementById('btn-pump-text');
         if (btnText) btnText.setAttribute('value', state.exploded ? '🔧 ASSEMBLE' : '💥 EXPLODE CUTAWAY');
       }
+
+      // Update Persistent 3D VR HUD
+      updateVRHudStatus(machineKey, state.exploded, state.targetProgress);
     }
 
     function onSliderChange(val) {
@@ -1004,8 +1226,13 @@
       if (cur && ExplodedLab.stations[cur]) {
         ExplodedLab.stations[cur].targetProgress = pct;
         ExplodedLab.stations[cur].exploded = pct > 0.5;
-        document.getElementById('slider-pct-label').innerText = `${Math.round(val)}%`;
-        document.getElementById('hud-status-label').innerText = pct > 0.05 ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+        const pctLabel = document.getElementById('slider-pct-label');
+        if (pctLabel) pctLabel.innerText = `${Math.round(val)}%`;
+        const hudStatus = document.getElementById('hud-status-label');
+        if (hudStatus) hudStatus.innerText = pct > 0.05 ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+        
+        // Update Persistent 3D VR HUD
+        updateVRHudStatus(cur, ExplodedLab.stations[cur].exploded, pct);
       }
     }
 
@@ -1016,42 +1243,53 @@
       ExplodedLab.activeStation = stationKey;
       const rig = document.getElementById('player-rig');
 
-      // Update Tabs
+      // Update 2D Tabs
       document.querySelectorAll('.machine-tab').forEach(t => t.classList.remove('active'));
       const activeTab = document.getElementById(`tab-${stationKey}`);
       if (activeTab) activeTab.classList.add('active');
 
-      if (stationKey === 'pump') {
-        rig.setAttribute('position', '-12 0 -2.5');
-        rig.setAttribute('rotation', '0 0 0');
-        updateStationOverview('500HP PUMP & MOTOR', 'Volute, Impeller, and Stator Assembly ready for cutaway inspection.');
-      } else if (stationKey === 'sub') {
-        rig.setAttribute('position', '0 0 -12.5');
-        rig.setAttribute('rotation', '0 0 0');
-        updateStationOverview('TRITON SUBMERSIBLE', 'Titanium Pressure Sphere, Battery Banks, and Vector Thrusters.');
-      } else if (stationKey === 'excavator') {
-        rig.setAttribute('position', '12 0 -2.5');
-        rig.setAttribute('rotation', '0 0 0');
-        updateStationOverview('JCB EXCAVATOR', 'Turbo-Diesel Engine Block, Axial Piston Pump, and Valve Spools.');
-      } else if (stationKey === 'hub') {
-        rig.setAttribute('position', '0 0 3');
-        rig.setAttribute('rotation', '0 0 0');
-        updateStationOverview('CENTRAL LABORATORY HUB', 'Select any machinery bay to inspect its exploded-view cutaway.');
+      if (rig) {
+        if (stationKey === 'pump') {
+          rig.setAttribute('position', '-12 0 -2.5');
+          rig.setAttribute('rotation', '0 0 0');
+          updateStationOverview('500HP PUMP & MOTOR', 'Volute, Impeller, and Stator Assembly ready for cutaway inspection.');
+        } else if (stationKey === 'sub') {
+          rig.setAttribute('position', '0 0 -12.5');
+          rig.setAttribute('rotation', '0 0 0');
+          updateStationOverview('TRITON SUBMERSIBLE', 'Titanium Pressure Sphere, Battery Banks, and Vector Thrusters.');
+        } else if (stationKey === 'excavator') {
+          rig.setAttribute('position', '12 0 -2.5');
+          rig.setAttribute('rotation', '0 0 0');
+          updateStationOverview('JCB EXCAVATOR', 'Turbo-Diesel Engine Block, Axial Piston Pump, and Valve Spools.');
+        } else if (stationKey === 'hub') {
+          rig.setAttribute('position', '0 0 3');
+          rig.setAttribute('rotation', '0 0 0');
+          updateStationOverview('CENTRAL LABORATORY HUB', 'Select any machinery bay to inspect its exploded-view cutaway.');
+        }
       }
 
-      // Sync slider with current station
+      // Sync slider and VR HUD with current station
       const st = ExplodedLab.stations[stationKey];
       if (st) {
-        document.getElementById('explode-range-slider').value = st.targetProgress * 100;
-        document.getElementById('slider-pct-label').innerText = `${Math.round(st.targetProgress * 100)}%`;
-        document.getElementById('hud-status-label').innerText = st.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+        const slider = document.getElementById('explode-range-slider');
+        if (slider) slider.value = st.targetProgress * 100;
+        const pctLabel = document.getElementById('slider-pct-label');
+        if (pctLabel) pctLabel.innerText = `${Math.round(st.targetProgress * 100)}%`;
+        const hudStatus = document.getElementById('hud-status-label');
+        if (hudStatus) hudStatus.innerText = st.exploded ? 'STATUS: EXPLODED' : 'STATUS: ASSEMBLED';
+        updateVRHudStatus(stationKey, st.exploded, st.targetProgress);
+      } else {
+        updateVRHudStatus(stationKey, false, 0);
       }
     }
 
     function updateStationOverview(title, desc) {
-      document.getElementById('hud-part-name').innerText = title;
-      document.getElementById('hud-part-desc').innerText = desc;
-      document.getElementById('hud-subsystem-label').innerText = 'STATION INSPECTION';
+      const partName = document.getElementById('hud-part-name');
+      if (partName) partName.innerText = title;
+      const partDesc = document.getElementById('hud-part-desc');
+      if (partDesc) partDesc.innerText = desc;
+      const subLabel = document.getElementById('hud-subsystem-label');
+      if (subLabel) subLabel.innerText = 'STATION INSPECTION';
     }
 
     /* =========================================================================
@@ -1061,9 +1299,12 @@
       soundEngine.playScanTone();
       
       // Update 2D Inspector Card
-      document.getElementById('hud-part-name').innerText = partName;
-      document.getElementById('hud-subsystem-label').innerText = `SUBSYSTEM: ${subsystem.toUpperCase()}`;
-      document.getElementById('hud-part-desc').innerText = fullDesc;
+      const nameEl = document.getElementById('hud-part-name');
+      if (nameEl) nameEl.innerText = partName;
+      const subLabel = document.getElementById('hud-subsystem-label');
+      if (subLabel) subLabel.innerText = `SUBSYSTEM: ${subsystem.toUpperCase()}`;
+      const descEl = document.getElementById('hud-part-desc');
+      if (descEl) descEl.innerText = fullDesc;
 
       // Update 3D Floating In-Scene #info-panel
       const infoPanel = document.getElementById('info-panel');
@@ -1076,7 +1317,6 @@
     }
 
     function clearPartHover() {
-      // Clear or reset to station summary
       const infoPanel = document.getElementById('info-panel');
       if (infoPanel) infoPanel.setAttribute('value', '500 HP PUMP ASSEMBLY // INSPECTION MODE');
     }
@@ -1092,7 +1332,25 @@
     });
 
     /* =========================================================================
-       5. REAL-TIME ANIMATION LOOP (INTERPOLATES EXPLODED PART POSITIONS)
+       5. VR HUD DIRECT EVENT BINDING
+       ========================================================================= */
+    function setupVRHudEvents() {
+      const bindClick = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('click', fn);
+          el.addEventListener('triggerdown', fn);
+        }
+      };
+      bindClick('vr-btn-explode', () => toggleCurrentExplode());
+      bindClick('vr-btn-pump', () => teleportToStation('pump'));
+      bindClick('vr-btn-ex', () => teleportToStation('excavator'));
+      bindClick('vr-btn-sub', () => teleportToStation('sub'));
+      bindClick('vr-btn-audio', () => toggleAudioEngine());
+    }
+
+    /* =========================================================================
+       6. REAL-TIME ANIMATION LOOP (INTERPOLATES EXPLODED PART POSITIONS)
        ========================================================================= */
     function animationLoop() {
       // 1. Interpolate Pump Exploded View
@@ -1100,11 +1358,9 @@
       pState.progress += (pState.targetProgress - pState.progress) * 0.08;
       const pP = pState.progress;
 
-      // Volute Casing translates Left (X: 0 to -2.0)
       const partVolute = document.getElementById('part-volute');
       if (partVolute) partVolute.setAttribute('position', `${-2.0 * pP} 0 0`);
 
-      // Drive Motor translates Right (X: 0 to +2.2)
       const partMotor = document.getElementById('part-motor');
       if (partMotor) partMotor.setAttribute('position', `${2.2 * pP} 0 0`);
 
@@ -1171,6 +1427,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       teleportToStation('pump');
+      setupVRHudEvents();
       animationLoop();
     });
   </script>
